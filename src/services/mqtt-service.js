@@ -20,11 +20,13 @@ class MQTTService {
       clean: true,
       reconnectPeriod: 5000,
       connectTimeout: 30000,
+      rejectUnauthorized: false, // Penting untuk TLS di beberapa environment
     };
 
     console.log('🔌 Connecting to MQTT broker:', options.host);
 
-    this.client = mqtt.connect(`mqtt://${options.host}:${options.port}`, options);
+    const protocol = options.port === 8883 ? 'mqtts' : 'mqtt';
+    this.client = mqtt.connect(`${protocol}://${options.host}:${options.port}`, options);
 
     this.client.on('connect', () => {
       console.log('✅ MQTT Connected to HiveMQ!');
