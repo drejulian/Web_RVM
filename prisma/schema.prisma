@@ -222,12 +222,13 @@ model SystemConfig {
 }
 
 model ArduinoSession {
-  id        String   @id @default(uuid())
-  deviceId  String   
-  userId    String   
-  expiresAt DateTime
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String    @id @default(uuid())
+  deviceId    String   
+  userId      String   
+  expiresAt   DateTime
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
   
   @@index([deviceId, isActive])
   @@map("arduino_sessions")
