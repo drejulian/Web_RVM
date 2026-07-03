@@ -107,6 +107,23 @@ export default function RedeemGopayPage() {
     };
     
     createSession();
+    
+    return () => {
+      const endSession = async () => {
+        try {
+          console.log('🔒 Ending session on page unmount...');
+          await fetch('/api/sessions/end', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId: 'RVM-LAB-001' })
+          });
+          console.log('✅ Session ended');
+        } catch (error) {
+          console.error('❌ Error ending session:', error);
+        }
+      };
+      endSession();
+    };
   }, []);
 
   // Extract data with safe defaults - Updated for new 2-stage flow
