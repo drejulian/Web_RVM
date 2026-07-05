@@ -180,6 +180,21 @@ export async function POST(request) {
       }
     );
 
+    // Broadcast bottles claimed event to all clients for real-time update
+    if (global.io && result.claimedCount > 0) {
+      const firstDetection = result.claimedDetections[0];
+      global.io.to('bottle-detection').emit('bottles_claimed', {
+        type: 'bottles_claimed',
+        userId,
+        deviceId: firstDetection?.deviceId,
+        claimedCount: result.claimedCount,
+        bottlesAdded: result.totalBottles,
+        pointsEarned: result.pointsEarned,
+        timestamp: new Date().toISOString()
+      });
+      console.log('📡 Broadcasted bottles_claimed event via Socket.IO');
+    }
+
     console.log('✅ Claim transaction completed:', {
       userId,
       claimedCount: result.claimedCount,

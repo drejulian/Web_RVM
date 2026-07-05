@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useFetch } from '@/hooks/use-fetch';
 import { useSocket } from '@/hooks/use-socket-clients';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function RedeemGopayPage() {
+  const searchParams = useSearchParams();
+  const deviceId = searchParams.get('deviceId') || 'RVM-DEFAULT';
+  
   const [data, loading, error] = useFetch('/api/bottle-count');
   const [claiming, setClaiming] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -90,7 +94,7 @@ export default function RedeemGopayPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            deviceId: 'RVM-LAB-001',
+            deviceId: deviceId,
             expiresInMinutes: 5
           })
         });
@@ -115,7 +119,7 @@ export default function RedeemGopayPage() {
           await fetch('/api/sessions/end', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId: 'RVM-LAB-001' })
+            body: JSON.stringify({ deviceId: deviceId })
           });
           console.log('✅ Session ended');
         } catch (error) {
@@ -124,7 +128,7 @@ export default function RedeemGopayPage() {
       };
       endSession();
     };
-  }, []);
+  }, [deviceId]);
 
   // Extract data with safe defaults - Updated for new 2-stage flow
   const bottleData = data?.bottleData || {};
