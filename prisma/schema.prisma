@@ -15,9 +15,10 @@ model User {
   nama        String?
   password    String?
   phoneNumber String?             @map("phone_number")
-  updatedAt   DateTime            @updatedAt
-  bottleCount UserBottleCount?
-  redemptions VoucherRedemption[]
+  updatedAt        DateTime            @updatedAt
+  bottleCount      UserBottleCount?
+  redemptions      VoucherRedemption[]
+  arduinoSessions  ArduinoSession[]
 
   // Google OAuth fields
   googleId     String? @unique
@@ -99,6 +100,7 @@ model ArduinoConnection {
   location     RvmLocation?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
   transactions BottleTransaction[]
   bottleCounts BottleCount[]
+  sessions     ArduinoSession[]
 
   @@map("arduino_connections")
 }
@@ -229,6 +231,9 @@ model ArduinoSession {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   confirmedAt DateTime?
+  
+  device ArduinoConnection @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([deviceId, isActive])
   @@map("arduino_sessions")

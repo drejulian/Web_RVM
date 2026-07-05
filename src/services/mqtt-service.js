@@ -16,11 +16,14 @@ class MQTTService {
       port: parseInt(process.env.MQTT_PORT || '1883'),
       username: process.env.MQTT_USERNAME,
       password: process.env.MQTT_PASSWORD,
-      clientId: process.env.MQTT_CLIENT_ID || 'web_rvm_server',
+      clientId: `${process.env.MQTT_CLIENT_ID || 'web_rvm_server'}_${Math.random().toString(16).substr(2, 8)}`,
+      protocol: 'mqtts',
+      protocolVersion: 4,
+      keepalive: 60,
       clean: true,
       reconnectPeriod: 5000,
       connectTimeout: 30000,
-      rejectUnauthorized: false, // Penting untuk TLS di beberapa environment
+      rejectUnauthorized: false,
     };
 
     console.log('🔌 Connecting to MQTT broker:', options.host);
@@ -94,6 +97,15 @@ class MQTTService {
 
       if (!deviceId || !rvmLocationId) {
         console.error('❌ Missing required fields: deviceId, rvmLocationId');
+        return;
+      }
+
+      const device = await prisma.arduinoConnection.findUnique({
+        where: { deviceId },
+      });
+
+      if (!device) {
+        console.error(`❌ Unknown device: ${deviceId} - Not registered in system`);
         return;
       }
 
@@ -262,16 +274,18 @@ class MQTTService {
         return;
       }
 
-      await prisma.arduinoConnection.upsert({
+      const device = await prisma.arduinoConnection.findUnique({
         where: { deviceId },
-        update: {
-          status: status || 'online',
-          lastPing: new Date(),
-          ipAddress: 'mqtt',
-        },
-        create: {
-          deviceId,
-          locationId: 1,
+      });
+
+      if (!device) {
+        console.error(`❌ Unknown device: ${deviceId} - Not registered in system. Please register this device in admin dashboard first.`);
+        return;
+      }
+
+      await prisma.arduinoConnection.update({
+        where: { deviceId },
+        data: {
           status: status || 'online',
           lastPing: new Date(),
           ipAddress: 'mqtt',
