@@ -7,6 +7,8 @@ import { useSocket } from '@/hooks/use-socket-clients';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default function RedeemGopayPage() {
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('deviceId') || 'RVM-DEFAULT';
