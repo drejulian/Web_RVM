@@ -4,12 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useFetch } from '@/hooks/use-fetch';
 import { useSocket } from '@/hooks/use-socket-clients';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function RedeemGopayPage() {
+function BottleInContent() {
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('deviceId') || 'RVM-DEFAULT';
   
@@ -368,5 +368,17 @@ export default function RedeemGopayPage() {
         <Modal />
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="bg-primary min-h-screen flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    }>
+      <BottleInContent />
+    </Suspense>
   );
 }
