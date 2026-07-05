@@ -9,59 +9,46 @@ datasource db {
 }
 
 model User {
-  id          String              @id @default(uuid())
-  email       String              @unique
-  createdAt   DateTime            @default(now())
-  nama        String?
-  password    String?
-  phoneNumber String?             @map("phone_number")
-  updatedAt        DateTime            @updatedAt
-  bottleCount      UserBottleCount?
-  redemptions      VoucherRedemption[]
-  arduinoSessions  ArduinoSession[]
-
-  // Google OAuth fields
-  googleId     String? @unique
-  isGoogleAuth Boolean @default(false)
-
-  // Password Reset fields
+  id                       String              @id @default(uuid())
+  email                    String              @unique
+  createdAt                DateTime            @default(now())
+  nama                     String?
+  password                 String?
+  phoneNumber              String?             @map("phone_number")
+  updatedAt                DateTime            @updatedAt
+  googleId                 String?             @unique
+  isGoogleAuth             Boolean             @default(false)
   resetPasswordToken       String?
   resetPasswordTokenExpiry DateTime?
+  arduinoSessions          ArduinoSession[]
+  bottleCount              UserBottleCount?
+  redemptions              VoucherRedemption[]
 }
 
 model Admin {
-  id        String    @id @default(uuid())
-  email     String    @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   nama      String
   password  String
-  role      AdminRole @default(OPERATOR)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      AdminRole  @default(OPERATOR)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   lastLogin DateTime?
-
   auditLogs AuditLog[]
 
   @@map("admins")
 }
 
-enum AdminRole {
-  SUPER_ADMIN
-  ADMIN
-  OPERATOR
-  CONTENT_MANAGER
-}
-
 model UserBottleCount {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  totalBottles    Int      @default(0)
-  redeemableCount Int      @default(0)
-  lifetimeCount   Int      @default(0)
-  points          Int      @default(0)
-  lifetimePoints  Int      @default(0)
-  lastUpdated     DateTime @default(now()) @updatedAt
-
+  id                 String              @id @default(uuid())
+  userId             String              @unique
+  totalBottles       Int                 @default(0)
+  redeemableCount    Int                 @default(0)
+  lifetimeCount      Int                 @default(0)
+  points             Int                 @default(0)
+  lifetimePoints     Int                 @default(0)
+  lastUpdated        DateTime            @default(now()) @updatedAt
   bottleCounts       BottleCount[]
   bottleTransactions BottleTransaction[]
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -70,87 +57,75 @@ model UserBottleCount {
 }
 
 model BottleTransaction {
-  id                String   @id @default(uuid())
+  id                String             @id @default(uuid())
   userBottleCountId String
   deviceId          String?
-  locationId        Int?
   transactionType   String
   bottleCount       Int
-  pointsEarned      Int      @default(0)
-  timestamp         DateTime @default(now())
-
-  userBottleCount UserBottleCount    @relation(fields: [userBottleCountId], references: [id], onDelete: Cascade)
-  device          ArduinoConnection? @relation(fields: [deviceId], references: [deviceId], onDelete: SetNull)
-  location        RvmLocation?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  bottleCounts    BottleCount[]
+  pointsEarned      Int                @default(0)
+  timestamp         DateTime           @default(now())
+  locationId        Int?
+  bottleCounts      BottleCount[]
+  device            ArduinoConnection? @relation(fields: [deviceId], references: [deviceId])
+  location          RvmLocation?       @relation(fields: [locationId], references: [id])
+  userBottleCount   UserBottleCount    @relation(fields: [userBottleCountId], references: [id], onDelete: Cascade)
 
   @@map("bottle_transactions")
 }
 
 model ArduinoConnection {
-  id         Int      @id @default(autoincrement())
-  deviceId   String   @unique
-  locationId Int?
-  ipAddress  String?
-  status     String
-  lastPing   DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  location     RvmLocation?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  transactions BottleTransaction[]
-  bottleCounts BottleCount[]
+  id           Int                 @id @default(autoincrement())
+  deviceId     String              @unique
+  locationId   Int?
+  ipAddress    String?
+  status       String
+  lastPing     DateTime            @default(now())
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  location     RvmLocation?        @relation(fields: [locationId], references: [id])
   sessions     ArduinoSession[]
+  bottleCounts BottleCount[]
+  transactions BottleTransaction[]
 
   @@map("arduino_connections")
 }
 
 model RvmLocation {
-  id               Int      @id @default(autoincrement())
-  name             String
-  address          String?
-  position         Json
-  capacity         Int      @default(100)
-  currentStock     Int      @default(0)
-  capacityStatus   String   @default("AVAILABLE")
-  operationalHours String   @default("08:00-22:00")
-  contactNumber    String?
-  status           String   @default("ACTIVE")
-  image            String?
-  images           Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  address            String?
+  position           Json
+  capacity           Int                 @default(100)
+  currentStock       Int                 @default(0)
+  capacityStatus     String              @default("AVAILABLE")
+  operationalHours   String              @default("08:00-22:00")
+  contactNumber      String?
+  status             String              @default("ACTIVE")
+  image              String?
+  images             Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   arduinoConnections ArduinoConnection[]
   transactions       BottleTransaction[]
 
   @@map("rvm_locations")
 }
 
-enum BottleTransactionType {
-  DEPOSIT
-  REDEEM
-  ADJUSTMENT
-}
-
 model BottleCount {
-  id                  Int      @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   deviceId            String
-  count               Int      @default(1)
+  count               Int                @default(1)
   distance            Float?
-  source              String   @default("arduino")
-  timestamp           DateTime @default(now())
+  source              String             @default("arduino")
+  timestamp           DateTime           @default(now())
   userBottleCountId   String?
   bottleTransactionId String?
-
-  userBottleCount UserBottleCount?   @relation(fields: [userBottleCountId], references: [id], onDelete: Cascade)
-  device          ArduinoConnection  @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-  transaction     BottleTransaction? @relation(fields: [bottleTransactionId], references: [id], onDelete: SetNull)
+  transaction         BottleTransaction? @relation(fields: [bottleTransactionId], references: [id])
+  device              ArduinoConnection  @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  userBottleCount     UserBottleCount?   @relation(fields: [userBottleCountId], references: [id], onDelete: Cascade)
 
   @@map("bottle_counts")
 }
-
-// ===== ADMIN AUDIT MODELS =====
 
 model AuditLog {
   id         String   @id @default(uuid())
@@ -161,8 +136,7 @@ model AuditLog {
   details    Json?
   ipAddress  String?
   timestamp  DateTime @default(now())
-
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("audit_logs")
 }
@@ -170,7 +144,7 @@ model AuditLog {
 model News {
   id          String    @id @default(uuid())
   title       String
-  content     String    @db.Text
+  content     String
   imageUrl    String?
   category    String
   isPublished Boolean   @default(false)
@@ -183,17 +157,16 @@ model News {
 }
 
 model Voucher {
-  id         String    @id @default(uuid())
-  code       String    @unique
-  partner    String
-  value      Int
-  pointCost  Int
-  stock      Int       @default(0)
-  isActive   Boolean   @default(true)
-  expiryDate DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
+  id          String              @id @default(uuid())
+  code        String              @unique
+  partner     String
+  value       Int
+  pointCost   Int
+  stock       Int                 @default(0)
+  isActive    Boolean             @default(true)
+  expiryDate  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   redemptions VoucherRedemption[]
 
   @@map("vouchers")
@@ -206,9 +179,8 @@ model VoucherRedemption {
   status     String
   redeemedAt DateTime  @default(now())
   usedAt     DateTime?
-
-  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher    Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@map("voucher_redemptions")
 }
@@ -224,17 +196,29 @@ model SystemConfig {
 }
 
 model ArduinoSession {
-  id          String    @id @default(uuid())
-  deviceId    String   
-  userId      String   
+  id          String            @id @default(uuid())
+  deviceId    String
+  userId      String
   expiresAt   DateTime
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
   confirmedAt DateTime?
-  
-  device ArduinoConnection @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
-  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  device      ArduinoConnection @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([deviceId, isActive])
   @@map("arduino_sessions")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  OPERATOR
+  CONTENT_MANAGER
+}
+
+enum BottleTransactionType {
+  DEPOSIT
+  REDEEM
+  ADJUSTMENT
 }

@@ -11,13 +11,52 @@ export const dynamic = 'force-dynamic';
 
 function BottleInContent() {
   const searchParams = useSearchParams();
-  const deviceId = searchParams.get('deviceId') || 'RVM-DEFAULT';
-  
+  const deviceId = searchParams.get('deviceId');
+
   const [data, loading, error] = useFetch('/api/bottle-count');
   const [claiming, setClaiming] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [realtimeData, setRealtimeData] = useState(null);
   const [newDetectionAlert, setNewDetectionAlert] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState(null);
+  const [sessionError, setSessionError] = useState('');
+
+  useEffect(() => {
+    const loadDeviceInfo = async () => {
+      if (!deviceId) {
+        setSessionError('Parameter deviceId tidak ada di URL scan.');
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/devices/${encodeURIComponent(deviceId)}`
+        );
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          setSessionError(result.error || 'Device belum terdaftar di sistem.');
+          return;
+        }
+
+        setDeviceInfo(result.data);
+        setSessionError('');
+        sessionStorage.setItem(
+          'deviceContext',
+          JSON.stringify({
+            deviceId: result.data.deviceId,
+            locationId: result.data.locationId,
+            locationName: result.data.locationName,
+          })
+        );
+      } catch (infoError) {
+        console.error('❌ Error loading device info:', infoError);
+        setSessionError('Tidak bisa memuat info device RVM.');
+      }
+    };
+
+    loadDeviceInfo();
+  }, [deviceId]);
 
   // Socket.IO connection for real-time updates
   const {
@@ -90,6 +129,10 @@ function BottleInContent() {
 
   // Auto-create session when page loads
   useEffect(() => {
+    if (!deviceId || sessionError || !deviceInfo) {
+      return;
+    }
+
     const createSession = async () => {
       try {
         const response = await fetch('/api/sessions/create', {
@@ -97,10 +140,10 @@ function BottleInContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             deviceId: deviceId,
-            expiresInMinutes: 5
-          })
+            expiresInMinutes: 5,
+          }),
         });
-        
+
         const result = await response.json();
         if (result.success) {
           console.log('✅ Session created:', result.data.sessionId);
@@ -111,9 +154,9 @@ function BottleInContent() {
         console.error('❌ Error creating session:', error);
       }
     };
-    
+
     createSession();
-    
+
     return () => {
       const endSession = async () => {
         try {
@@ -121,7 +164,7 @@ function BottleInContent() {
           await fetch('/api/sessions/end', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId: deviceId })
+            body: JSON.stringify({ deviceId: deviceId }),
           });
           console.log('✅ Session ended');
         } catch (error) {
@@ -130,7 +173,7 @@ function BottleInContent() {
       };
       endSession();
     };
-  }, [deviceId]);
+  }, [deviceId, sessionError, deviceInfo]);
 
   // Extract data with safe defaults - Updated for new 2-stage flow
   const bottleData = data?.bottleData || {};
@@ -189,6 +232,10 @@ function BottleInContent() {
             bottlesAdded: claimedBottles,
             pointsEarned: pointsEarned,
             claimTime: new Date().toISOString(),
+            deviceId: deviceId,
+            locationId: deviceInfo?.locationId || null,
+            locationName:
+              deviceInfo?.locationName || 'Lokasi RVM tidak tersedia',
           })
         );
 
@@ -229,6 +276,13 @@ function BottleInContent() {
         )}
 
         <div className="grid justify-center mt-10">
+          {sessionError && (
+            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
+              <strong className="font-bold">Session warning: </strong>
+              <span className="block sm:inline">{sessionError}</span>
+            </div>
+          )}
+
           <div className="text-center mb-6">
             <h1 className="text-2xl font-semibold text-text-primary mb-2">
               Halo{userStats.userName ? `, ${userStats.userName}` : ''}!
@@ -373,11 +427,13 @@ function BottleInContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={
-      <div className="bg-primary min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="bg-primary min-h-screen flex items-center justify-center">
+          <div className="text-white text-xl">Loading...</div>
+        </div>
+      }
+    >
       <BottleInContent />
     </Suspense>
   );

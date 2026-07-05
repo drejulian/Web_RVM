@@ -251,7 +251,20 @@ export default function QRScannerPage() {
     await cleanupStreams();
 
     if (decodedText.includes('bottlein') || decodedText.includes('/bottlein')) {
-      setTimeout(() => router.push('/bottlein'), 500);
+      try {
+        const url = new URL(decodedText, window.location.origin);
+        setTimeout(() => router.push(url.pathname + url.search), 500);
+      } catch {
+        setTimeout(
+          () =>
+            router.push(
+              decodedText.includes('?')
+                ? decodedText.slice(decodedText.indexOf('/bottlein'))
+                : '/bottlein'
+            ),
+          500
+        );
+      }
       return;
     }
     if (decodedText.includes('localhost:3000')) {

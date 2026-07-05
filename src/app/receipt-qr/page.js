@@ -8,6 +8,7 @@ export default function Page() {
   const [data, loading, error] = useFetch('/api/bottle-count');
   const [accessTime, setAccessTime] = useState('');
   const [claimResult, setClaimResult] = useState(null);
+  const [deviceContext, setDeviceContext] = useState(null);
 
   // Check for claim result from sessionStorage
   useEffect(() => {
@@ -16,6 +17,11 @@ export default function Page() {
       setClaimResult(JSON.parse(storedClaimResult));
       // Clear after use
       sessionStorage.removeItem('claimResult');
+    }
+
+    const storedDeviceContext = sessionStorage.getItem('deviceContext');
+    if (storedDeviceContext) {
+      setDeviceContext(JSON.parse(storedDeviceContext));
     }
   }, []);
 
@@ -33,6 +39,10 @@ export default function Page() {
   // Use claim result data if available
   const sessionBottles = claimResult?.bottlesAdded || redeemableCount;
   const sessionPoints = claimResult?.pointsEarned || redeemableCount * 50;
+  const locationName =
+    claimResult?.locationName ||
+    deviceContext?.locationName ||
+    'Lokasi RVM tidak tersedia';
 
   // Fetch user details from profile API
   const [userData, userLoading, userError] = useFetch('/api/user/profile');
@@ -125,9 +135,7 @@ export default function Page() {
       <div className="space-y-4">
         <div className="border shadow-sm p-3 rounded-lg">
           <p className="font-regular text-gray-500 text-sm">Lokasi</p>
-          <p className="font-semibold text-[#121212] text-sm">
-            Lab RVM Station - Paramadina
-          </p>
+          <p className="font-semibold text-[#121212] text-sm">{locationName}</p>
         </div>
 
         <div className="border shadow-sm p-3 rounded-lg">

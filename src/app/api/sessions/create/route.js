@@ -41,6 +41,28 @@ export async function POST(request) {
       );
     }
 
+    const device = await prisma.arduinoConnection.findUnique({
+      where: { deviceId },
+      include: {
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!device) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Device ${deviceId} is not registered. Register the device in the admin dashboard first.`,
+        },
+        { status: 404 }
+      );
+    }
+
     console.log('👤 Creating session for user:', userId);
     console.log('🏭 Device:', deviceId);
 
@@ -63,6 +85,21 @@ export async function POST(request) {
 
     console.log('✅ Session created:', session.id);
     console.log('⏰ Expires at:', expiresAt.toISOString());
+
+    // Broadcast session started event to ALL clients (mesin_rvm display)
+    console.log('🔍 DEBUG: global.io exists?', !!global.io);
+    if (global.io) {
+      global.io.emit('session_started', {
+        type: 'session_started',
+        sessionId: session.id,
+        deviceId: session.deviceId,
+        userId: session.userId,
+        timestamp: new Date().toISOString(),
+      });
+      console.log('📡 Broadcasted session_started event to ALL clients');
+    } else {
+      console.error('❌ global.io is undefined - Socket.io not available!');
+    }
 
     return NextResponse.json({
       success: true,

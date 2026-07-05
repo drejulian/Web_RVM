@@ -80,7 +80,7 @@ export async function GET(request) {
     const unclaimedBottles = await prisma.bottleCount.findMany({
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       orderBy: {
         timestamp: 'desc',

@@ -80,7 +80,7 @@ export async function POST(request) {
         // 3. Get unclaimed detections
         let whereClause = {
           userBottleCountId: null, // Unclaimed
-          source: 'arduino',
+          source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
         };
 
         if (!claimAll && detectionIds && detectionIds.length > 0) {
@@ -146,7 +146,6 @@ export async function POST(request) {
         // 7. Create transaction records for audit trail (batch operation)
         const transactionRecords = unclaimedDetections.map((detection) => ({
           userBottleCountId: userBottleCount.id,
-          bottleCountId: detection.id,
           deviceId: detection.deviceId,
           transactionType: 'deposit',
           bottleCount: detection.count,
@@ -180,10 +179,11 @@ export async function POST(request) {
       }
     );
 
-    // Broadcast bottles claimed event to all clients for real-time update
+    // Broadcast bottles claimed event to ALL clients for real-time update
+    console.log('🔍 DEBUG: Broadcasting bottles_claimed, global.io exists?', !!global.io);
     if (global.io && result.claimedCount > 0) {
       const firstDetection = result.claimedDetections[0];
-      global.io.to('bottle-detection').emit('bottles_claimed', {
+      global.io.emit('bottles_claimed', {
         type: 'bottles_claimed',
         userId,
         deviceId: firstDetection?.deviceId,
@@ -192,7 +192,9 @@ export async function POST(request) {
         pointsEarned: result.pointsEarned,
         timestamp: new Date().toISOString()
       });
-      console.log('📡 Broadcasted bottles_claimed event via Socket.IO');
+      console.log('📡 Broadcasted bottles_claimed event to ALL clients');
+    } else if (!global.io) {
+      console.error('❌ global.io is undefined - Socket.io not available for broadcast!');
     }
 
     console.log('✅ Claim transaction completed:', {
@@ -240,7 +242,7 @@ export async function GET() {
     const unclaimedDetections = await prisma.bottleCount.findMany({
       where: {
         userBottleCountId: null, // Unclaimed
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       orderBy: { timestamp: 'desc' },
       take: 50, // Limit untuk performance
@@ -258,14 +260,14 @@ export async function GET() {
     const totalUnclaimedCount = await prisma.bottleCount.count({
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
     });
 
     const totalUnclaimedBottles = await prisma.bottleCount.aggregate({
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       _sum: { count: true },
     });
@@ -275,7 +277,7 @@ export async function GET() {
       by: ['deviceId'],
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       _sum: { count: true },
       _count: { id: true },

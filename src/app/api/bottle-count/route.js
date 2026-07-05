@@ -65,7 +65,7 @@ export async function GET(request) {
     const unclaimedDetections = await prisma.bottleCount.findMany({
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       orderBy: { timestamp: 'desc' },
       take: 10,
@@ -74,7 +74,7 @@ export async function GET(request) {
     const totalUnclaimedBottles = await prisma.bottleCount.aggregate({
       where: {
         userBottleCountId: null,
-        source: 'arduino',
+        source: 'arduino_mqtt', // Only MQTT source (Arduino sends via MQTT only)
       },
       _sum: { count: true },
     });

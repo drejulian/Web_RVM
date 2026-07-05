@@ -57,12 +57,13 @@ export async function POST(request) {
       console.log(`✅ ${updated.count} session(s) deactivated`);
       
       if (global.io) {
-        global.io.to('bottle-detection').emit('session_ended', {
+        global.io.emit('session_ended', {
+          type: 'session_ended',
           deviceId,
           userId,
           timestamp: new Date().toISOString(),
         });
-        console.log('📡 Broadcasted session_ended event via Socket.IO');
+        console.log('📡 Broadcasted session_ended event to ALL clients');
       }
 
       return NextResponse.json({

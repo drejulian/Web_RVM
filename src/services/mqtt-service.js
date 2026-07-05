@@ -195,7 +195,10 @@ class MQTTService {
       }
 
       const totalUnclaimedBottles = await prisma.bottleCount.aggregate({
-        where: { userBottleCountId: null },
+        where: { 
+          userBottleCountId: null,
+          deviceId: deviceId  // Only count unclaimed bottles from THIS device
+        },
         _sum: { count: true },
       });
 
