@@ -3,6 +3,8 @@ import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import mqttService from './src/services/mqtt-service.js';
+import sessionCleanupService from './src/services/session-cleanup-service.js';
+import { connectPrisma } from './src/lib/prisma.js';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
@@ -11,17 +13,21 @@ const port = process.env.PORT || 3000;
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
-  const server = createServer(async (req, res) => {
-    try {
-      const parsedUrl = parse(req.url, true);
-      await handle(req, res, parsedUrl);
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err);
-      res.statusCode = 500;
-      res.end('internal server error');
-    }
-  });
+app.prepare().then(async () => {
+  try {
+    console.log('🔌 Connecting to database...');
+    await connectPrisma();
+    
+    const server = createServer(async (req, res) => {
+      try {
+        const parsedUrl = parse(req.url, true);
+        await handle(req, res, parsedUrl);
+      } catch (err) {
+        console.error('Error occurred handling', req.url, err);
+        res.statusCode = 500;
+        res.end('internal server error');
+      }
+    });
 
   // Initialize Socket.IO
   const io = new Server(server, {
@@ -38,9 +44,14 @@ app.prepare().then(() => {
   console.log('🚀 Initializing MQTT Service...');
   mqttService.connect();
 
+  // Initialize Session Cleanup Service
+  console.log('🧹 Initializing Session Cleanup Service...');
+  sessionCleanupService.startAutoCleanup(5);
+
   // Handle graceful shutdown
   process.on('SIGTERM', () => {
     console.log('📴 Shutting down gracefully...');
+    sessionCleanupService.stopAutoCleanup();
     mqttService.disconnect();
     server.close(() => {
       console.log('✅ Server closed');
@@ -50,6 +61,7 @@ app.prepare().then(() => {
 
   process.on('SIGINT', () => {
     console.log('📴 Received SIGINT, shutting down...');
+    sessionCleanupService.stopAutoCleanup();
     mqttService.disconnect();
     server.close(() => {
       console.log('✅ Server closed');
@@ -60,14 +72,12 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
 
-    // Join bottle detection room
     socket.join('bottle-detection');
 
     socket.on('disconnect', () => {
       console.log('🔌 Client disconnected:', socket.id);
     });
 
-    // Send welcome message
     socket.emit('connected', {
       message: 'Connected to BottleIn real-time updates',
       timestamp: new Date().toISOString(),
@@ -83,4 +93,9 @@ app.prepare().then(() => {
       console.log(`> Ready on http://${hostname}:${port}`);
       console.log('> Socket.IO server initialized');
     });
+    
+  } catch (error) {
+    console.error('❌ Server failed to start due to database connection error:', error);
+    process.exit(1);
+  }
 });

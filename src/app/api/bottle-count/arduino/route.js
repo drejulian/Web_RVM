@@ -131,20 +131,9 @@ export async function POST(request) {
         }
       });
       
-      await prisma.bottleTransaction.create({
-        data: {
-          userBottleCountId: userBottleCount.id,
-          deviceId: parsedData.deviceId,
-          locationId: parsedData.rvmLocationId,
-          transactionType: 'DEPOSIT',
-          bottleCount: parsedData.bottleCount,
-          pointsEarned: pointsEarned,
-          timestamp: new Date()
-        }
-      });
-      
       console.log('✅ Bottle assigned to user:', parsedData.userId);
       console.log('💰 Points earned:', pointsEarned);
+      console.log('📦 Transaction will be created when session ends');
       
     } else {
       newRecord = await prisma.bottleCount.create({

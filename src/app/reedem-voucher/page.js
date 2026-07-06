@@ -46,7 +46,7 @@ export default function Page() {
                 </p>
                 <h3 className="text-[40px] font-medium">10.000</h3>
                 <div className="w-[140px] px-3 py-2 text-nowrap text-xs bg-bgSecondary text-primary rounded-xl">
-                  <p>11250 PlasticIn poin</p>
+                  <p>10.000 PlasticIn poin</p>
                 </div>
               </div>
               <div className="w-[50px] h-[50px] bg-bgSecondary rounded-lg"></div>
@@ -60,7 +60,7 @@ export default function Page() {
               </p>
               <h3 className="text-[40px] font-medium">25.000</h3>
               <div className="w-[140px] px-3 py-2 text-nowrap text-xs bg-bgSecondary text-gray-500 rounded-xl">
-                <p>26250 PlasticIn poin</p>
+                <p>26.250 PlasticIn poin</p>
               </div>
             </div>
             <div className="w-[50px] h-[50px] bg-bgSecondary rounded-lg"></div>
@@ -73,7 +73,7 @@ export default function Page() {
               </p>
               <h3 className="text-[40px] font-medium">50.000</h3>
               <div className="w-[140px] px-3 py-2 text-nowrap text-xs bg-bgSecondary text-gray-500 rounded-xl">
-                <p>51250 PlasticIn poin</p>
+                <p>51.250 PlasticIn poin</p>
               </div>
             </div>
             <div className="w-[50px] h-[50px] bg-bgSecondary rounded-lg"></div>
@@ -85,7 +85,7 @@ export default function Page() {
               </p>
               <h3 className="text-[40px] font-medium">75.000</h3>
               <div className="w-[140px] px-3 py-2 text-nowrap text-xs bg-bgSecondary  text-gray-500 rounded-xl">
-                <p>76250 PlasticIn poin </p>
+                <p>76.250 PlasticIn poin </p>
               </div>
             </div>
             <div className="w-[50px] h-[50px] bg-bgSecondary rounded-lg"></div>
@@ -97,7 +97,7 @@ export default function Page() {
               </p>
               <h3 className="text-[40px] font-medium">100.000</h3>
               <div className="w-[140px] px-3 py-2 text-nowrap text-xs bg-bgSecondary text-gray-500 rounded-xl">
-                <p>101250 PlasticIn poin</p>
+                <p>101.250 PlasticIn poin</p>
               </div>
             </div>
             <div className="w-[50px] h-[50px] bg-bgSecondary rounded-lg"></div>

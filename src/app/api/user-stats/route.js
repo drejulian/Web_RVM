@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '../../../lib/prisma';
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+
+const prisma = new PrismaClient();
 
 // Helper function untuk verifikasi token
 function verifyToken(token) {
@@ -36,8 +38,6 @@ export async function GET(request) {
         { status: 401 }
       );
     }
-
-    await prisma.$connect();
 
     // Get or create user bottle count record
     let userStats = await prisma.userBottleCount.findUnique({
@@ -76,8 +76,6 @@ export async function GET(request) {
       });
     }
 
-    await prisma.$disconnect();
-
     return NextResponse.json({
       success: true,
       data: {
@@ -93,8 +91,6 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('Error fetching user stats:', error);
-
-    await prisma.$disconnect();
 
     return NextResponse.json(
       { success: false, message: 'Terjadi kesalahan server' },
@@ -131,8 +127,6 @@ export async function POST(request) {
 
     const body = await request.json();
     const { bottleCount = 0, pointsToAdd = 0, action = 'add' } = body;
-
-    await prisma.$connect();
 
     // Get or create user bottle count record
     let userStats = await prisma.userBottleCount.findUnique({
@@ -178,7 +172,6 @@ export async function POST(request) {
       if (userStats.redeemableCount >= bottleCount) {
         newRedeemableCount -= bottleCount;
       } else {
-        await prisma.$disconnect();
         return NextResponse.json(
           {
             success: false,
@@ -225,8 +218,6 @@ export async function POST(request) {
       });
     }
 
-    await prisma.$disconnect();
-
     return NextResponse.json({
       success: true,
       message:
@@ -246,8 +237,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Error updating user stats:', error);
-
-    await prisma.$disconnect();
 
     return NextResponse.json(
       { success: false, message: 'Terjadi kesalahan server' },

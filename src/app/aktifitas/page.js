@@ -3,15 +3,22 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useUserContext } from '@/contexts/UserContextNew';
+import { useFetch } from '@/hooks/use-fetch';
 import { fetchTransactionHistory, claimPoints } from '@/services/user-service';
 
 export default function AktifitasPage() {
-  const { userDetail } = useUserContext();
+  const [userStatsData, statsLoading] = useFetch('/api/user-stats');
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [claimingId, setClaimingId] = useState(null);
+
+  const userStats = userStatsData || {
+    totalBottles: 0,
+    points: 0,
+    lifetimePoints: 0,
+    lifetimeCount: 0,
+  };
 
   useEffect(() => {
     loadActivities();
@@ -43,7 +50,6 @@ export default function AktifitasPage() {
       const response = await claimPoints([bottleCountId]);
 
       if (response.success) {
-        // Reload activities setelah claim berhasil
         await loadActivities();
         setClaimingId(null);
       } else {
@@ -105,9 +111,9 @@ export default function AktifitasPage() {
     return { time, dateStr };
   };
 
-  const totalPoints = userDetail?.bottleCount?.points || 0;
-  const lifetimeBottles = userDetail?.bottleCount?.lifetimeCount || 0;
-  const totalWithdrawn = userDetail?.bottleCount?.lifetimePoints || 0;
+  const totalPoints = userStats.points ?? 0;
+  const lifetimeBottles = userStats.lifetimeCount ?? 0;
+  const totalWithdrawn = userStats.lifetimePoints ?? 0;
 
   return (
     <div className="bg-primary h-screen pt-[35px] flex flex-col">
@@ -117,50 +123,57 @@ export default function AktifitasPage() {
           Aktifitas
         </h1>
 
-        <div className="space-y-2">
-          <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-white h-16 p-1">
-            <span className="font-medium text-text-primary">Total Poin</span>
-            <span className="font-bold text-primary text-2xl">
-              {totalPoints}
-            </span>
+        {statsLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
-
-          <div className="flex justify-between gap-2">
-            {/* Total Poin */}
-            <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-primary w-[160px] h-16 p-1">
-              <div className="flex justify-between px-1">
-                <Image
-                  src="/svg/Income.svg"
-                  alt="income"
-                  width={12}
-                  height={12}
-                />
-                <span className="font-regular text-white text-xs pl-2 my-1">
-                  Total Tarik Saldo
-                </span>
-              </div>
-              <span className="font-bold text-white text-2xl">
-                Rp. {(totalWithdrawn * 1000).toLocaleString('id-ID')}
-              </span>
-            </div>
-            <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-white w-[160px] h-16 p-1">
-              <div className="flex justify-between px-1">
-                <Image
-                  src="/svg/Expense.svg"
-                  alt="expense"
-                  width={12}
-                  height={12}
-                />
-                <span className="font-regular text-primary text-xs pl-2 my-1">
-                  Total Botol
-                </span>
-              </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-white h-16 p-1">
+              <span className="font-medium text-text-primary">Total Poin</span>
               <span className="font-bold text-primary text-2xl">
-                {lifetimeBottles} pcs
+                {totalPoints}
               </span>
             </div>
+
+            <div className="flex justify-between gap-2">
+              {/* Total Tarik Saldo */}
+              <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-primary w-[160px] h-16 p-1">
+                <div className="flex justify-between px-1">
+                  <Image
+                    src="/svg/Income.svg"
+                    alt="income"
+                    width={12}
+                    height={12}
+                  />
+                  <span className="font-regular text-white text-xs pl-2 my-1">
+                    Total Tarik Saldo
+                  </span>
+                </div>
+                <span className="font-bold text-white text-2xl">
+                  Rp. {(totalWithdrawn * 1000).toLocaleString('id-ID')}
+                </span>
+              </div>
+              {/* Total Botol */}
+              <div className="grid gap-0 justify-center text-center shadow-lg rounded-2xl bg-primary w-[160px] h-16 p-1">
+                <div className="flex justify-between px-1">
+                  <Image
+                    src="/svg/Expense.svg"
+                    alt="expense"
+                    width={12}
+                    height={12}
+                  />
+                  <span className="font-regular text-white text-xs pl-2 my-1">
+                    Total Botol
+                  </span>
+                </div>
+                <span className="font-bold text-white text-2xl">
+                  {lifetimeBottles} pcs
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Activities Section */}
@@ -233,14 +246,14 @@ export default function AktifitasPage() {
                         )}
                       </p>
                     </div>
-                    <div className="py-4 px-2">
-                      <p className="text-xs font-semibold">
-                        {activity.type === 'DEPOSIT'
-                          ? `${activity.amount} pc`
-                          : activity.type === 'PENDING_CLAIM' ||
-                              activity.type === 'REDEEM'
-                            ? `${activity.points}`
-                            : `${activity.amount}`}
+                    <div className="flex flex-col items-center justify-center py-2 px-3 min-w-[50px]">
+                      <p className="text-lg font-semibold text-gray-900">
+                        {activity.type === 'DEPOSIT' ||
+                        activity.type === 'PENDING_CLAIM'
+                          ? activity.amount || 0
+                          : activity.type === 'REDEEM'
+                            ? activity.points || 0
+                            : activity.amount || 0}
                       </p>
                     </div>
                     <div>

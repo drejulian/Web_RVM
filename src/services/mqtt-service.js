@@ -167,19 +167,8 @@ class MQTTService {
           },
         });
 
-        await prisma.bottleTransaction.create({
-          data: {
-            userBottleCountId: userBottleCount.id,
-            deviceId,
-            locationId: parseInt(rvmLocationId),
-            transactionType: 'DEPOSIT',
-            bottleCount: bottleCountValue,
-            pointsEarned,
-            timestamp: new Date(),
-          },
-        });
-
         console.log(`✅ Bottle assigned to user: ${userId}, Points: ${pointsEarned}`);
+        console.log(`📦 Transaction will be created when session ends`);
       } else {
         console.log('📝 Unclaimed mode - saving for BottleIn');
 

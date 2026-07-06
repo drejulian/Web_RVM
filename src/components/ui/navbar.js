@@ -126,7 +126,7 @@ export default function Navbar() {
             <div className="pb-1">
               <FiActivity className="w-6 h-6" />
             </div>
-            <span className="text-xs font-medium">Aktivitas</span>
+            <span className="text-xs font-medium">Aktifitas</span>
           </li>
         </Link>
 

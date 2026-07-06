@@ -143,23 +143,33 @@ export async function POST(request) {
         });
         console.log(`✅ User bottle count updated successfully`);
 
-        // 7. Create transaction records for audit trail (batch operation)
-        const transactionRecords = unclaimedDetections.map((detection) => ({
-          userBottleCountId: userBottleCount.id,
-          deviceId: detection.deviceId,
-          transactionType: 'deposit',
-          bottleCount: detection.count,
-          pointsEarned: detection.count * pointsPerBottle,
-          timestamp: new Date(),
-        }));
-
+        // 7. Create ONE grouped transaction for all claimed bottles
         console.log(
-          `📝 Creating ${transactionRecords.length} transaction records...`
+          `📝 Creating 1 grouped transaction for ${totalBottles} bottles...`
         );
-        await tx.bottleTransaction.createMany({
-          data: transactionRecords,
+        
+        const transaction = await tx.bottleTransaction.create({
+          data: {
+            userBottleCountId: userBottleCount.id,
+            deviceId: unclaimedDetections[0].deviceId,
+            transactionType: 'DEPOSIT',
+            bottleCount: totalBottles,
+            pointsEarned: totalPoints,
+            timestamp: unclaimedDetections[0].timestamp,
+          },
         });
-        console.log(`✅ Transaction records created successfully`);
+
+        // 8. Link all claimed bottles to this transaction
+        await tx.bottleCount.updateMany({
+          where: {
+            id: { in: unclaimedDetections.map(d => d.id) },
+          },
+          data: {
+            bottleTransactionId: transaction.id,
+          },
+        });
+
+        console.log(`✅ Grouped transaction created: ${transaction.id} with ${totalBottles} bottles`);
 
         return {
           claimedCount: unclaimedDetections.length,

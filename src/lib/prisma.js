@@ -1,18 +1,29 @@
 import { PrismaClient } from '@prisma/client';
 
-let prisma;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error', 'warn'],
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' 
+      ? ['error', 'warn'] 
+      : ['error'],
   });
-} else {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      log: ['query', 'error', 'warn'],
-    });
+};
+
+const globalForPrisma = globalThis;
+
+const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+export async function connectPrisma() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Prisma connected successfully');
+  } catch (error) {
+    console.error('❌ Prisma connection failed:', error);
+    throw error;
   }
-  prisma = global.prisma;
 }
 
 export default prisma;

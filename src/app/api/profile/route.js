@@ -73,6 +73,21 @@ export async function GET(req) {
 
     console.log('✅ User found:', user.email);
 
+    let bottleCount = user.bottleCount;
+    if (!bottleCount) {
+      console.log('📝 Creating UserBottleCount for user:', user.id);
+      bottleCount = await prisma.userBottleCount.create({
+        data: {
+          userId: user.id,
+          totalBottles: 0,
+          redeemableCount: 0,
+          lifetimeCount: 0,
+          points: 0,
+          lifetimePoints: 0,
+        },
+      });
+    }
+
     // Hapus password dari response untuk keamanan
     const { password, ...userWithoutPassword } = user;
 
@@ -89,7 +104,7 @@ export async function GET(req) {
           password: !!password,
           createdAt: userWithoutPassword.createdAt,
           updatedAt: userWithoutPassword.updatedAt,
-          bottleCount: userWithoutPassword.bottleCount,
+          bottleCount: bottleCount,
         },
       },
       { status: 200 }
