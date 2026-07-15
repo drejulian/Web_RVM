@@ -1,0 +1,400 @@
+Activity Diagrams - RVM Application (Simplified PlantUML)
+=======================================================
+
+File ini berisi 9 activity diagrams SEDERHANA dalam format PlantUML.
+Fokus pada alur utama dengan swimlanes yang bersih dan mudah dipahami.
+
+================================================================================
+
+1. LOGIN ACTIVITY DIAGRAM
+================================================================================
+
+@startuml Login
+title Login - Simplified
+
+|User|
+start
+:Buka Halaman Login;
+
+if (Metode\nLogin?) then (Email/Password)
+  :Input Email & Password;
+  :Click Login;
+  
+  |System|
+  if (Validasi\nLogin?) then (Berhasil)
+    :Login Berhasil;
+    |User|
+    :Redirect ke Home;
+    stop
+  else (Gagal)
+    |User|
+    :Tampilkan Error;
+    stop
+  endif
+
+else (Google OAuth)
+  |Google OAuth|
+  :Google Authentication;
+  
+  if (Berhasil?) then (Ya)
+    |System|
+    :Login Berhasil;
+    |User|
+    :Redirect ke Home;
+    stop
+  else (Tidak)
+    |User|
+    :Tampilkan Error;
+    stop
+  endif
+endif
+
+@enduml
+
+================================================================================
+
+2. REGISTER ACTIVITY DIAGRAM
+================================================================================
+
+@startuml Register
+title Register - Simplified
+
+|User|
+start
+:Buka Halaman Register;
+:Isi Form (Nama, Email, Password);
+:Accept Terms;
+:Click Register;
+
+|System|
+if (Validasi\nData?) then (OK)
+  :Simpan User;
+  :Registrasi Berhasil;
+  |User|
+  :Redirect ke Home;
+  stop
+else (Error)
+  |User|
+  :Tampilkan Error;
+  stop
+endif
+
+@enduml
+
+================================================================================
+
+3. MANAGE PROFILE ACTIVITY DIAGRAM
+================================================================================
+
+@startuml ManageProfile
+title Manage Profile - Simplified
+
+|User|
+start
+:Buka Halaman Profil;
+
+|System|
+:Tampilkan Data Profil;
+
+|User|
+if (Edit\nProfil?) then (Ya)
+  :Ubah Data;
+  :Click Simpan Perubahan;
+  
+  |System|
+  :Validasi Data;
+  :Simpan Perubahan;
+  
+  |User|
+  :Lihat Notifikasi Sukses;
+  stop
+  
+else (Tidak)
+  if (Ganti\nPassword?) then (Ya)
+    :Input Password Baru;
+    :Click Simpan Password;
+    
+    |System|
+    :Simpan Password Baru;
+    :Logout;
+    
+    |User|
+    :Redirect ke Halaman Login;
+    stop
+    
+  else (Tidak)
+    if (Logout?) then (Ya)
+      |System|
+      :Logout;
+      
+      |User|
+      :Redirect ke Halaman Login;
+      stop
+    else (Tidak)
+      stop
+    endif
+  endif
+endif
+
+@enduml
+
+================================================================================
+
+4. VIEW RVM LOCATION ACTIVITY DIAGRAM
+================================================================================
+
+@startuml ViewLocation
+title View RVM Location - Simplified
+
+|User|
+start
+:Buka Halaman Lokasi RVM;
+
+|System|
+if (Izin\nLokasi?) then (Ya)
+  :Ambil Lokasi User;
+else (Tidak)
+  :Gunakan Lokasi Default;
+endif
+
+|Leaflet|
+:Tampilkan Peta;
+:Tampilkan Marker RVM;
+
+|User|
+if (Klik\nMarker?) then (Ya)
+  |System|
+  :Tampilkan Detail RVM;
+  
+  |User|
+  if (Petunjuk\nArah?) then (Ya)
+    |Google Maps|
+    :Navigasi ke Lokasi;
+    
+    |User|
+    :Lihat Rute;
+  endif
+endif
+
+stop
+@enduml
+
+================================================================================
+
+5. VIEW TUTORIAL VIDEO ACTIVITY DIAGRAM
+================================================================================
+
+@startuml ViewTutorial
+title View Tutorial Video - Simplified
+
+|User|
+start
+:Buka Halaman Panduan;
+
+|System|
+:Load Daftar Video;
+
+|User|
+if (Aksi?) then (Pilih Video)
+  |System|
+  :Load Video Player;
+  |User|
+  :Tonton Video;
+  :Kontrol Video (Play/Pause/Seek);
+  stop
+else (Tutup)
+  stop
+endif
+
+@enduml
+
+================================================================================
+
+6. VIEW POINTS ACTIVITY DIAGRAM
+================================================================================
+
+@startuml ViewPoints
+title View Points - Simplified
+
+|User|
+start
+:Buka Halaman Poin;
+
+|System|
+:Fetch Balance & Statistik;
+:Tampilkan Total Poin & Botol;
+
+|User|
+if (Aksi?) then (Lihat Riwayat)
+  :Redirect ke Riwayat;
+  stop
+else if (Redeem)
+  :Redirect ke Redeem;
+  stop
+else (Tutup)
+  stop
+endif
+
+@enduml
+
+================================================================================
+
+7. VIEW TRANSACTION HISTORY ACTIVITY DIAGRAM
+================================================================================
+
+@startuml ViewHistory
+title View Transaction History - Simplified
+
+|User|
+start
+:Buka Halaman Riwayat;
+
+|System|
+:Fetch Transaksi (Pagination);
+:Tampilkan Statistik (Total Poin, Total Tarik Saldo, Total Botol);
+
+if (Ada Data?) then (Ya)
+  :Tampilkan Daftar Transaksi;
+  
+  |User|
+  if (Ada Pending Claim?) then (Ya)
+    :Klik "Ambil Poin";
+    |System|
+    :Proses Claim Points;
+    :Update Balance;
+    :Refresh Daftar;
+    |User|
+    stop
+  else (Tidak)
+    :Lihat Riwayat;
+    stop
+  endif
+  
+else (Tidak)
+  |User|
+  :Tampilkan "Belum Ada Aktivitas";
+  stop
+endif
+
+@enduml
+
+================================================================================
+
+8. REDEEM REWARD ACTIVITY DIAGRAM
+================================================================================
+
+@startuml RedeemReward
+title Redeem Reward - Simplified
+
+|User|
+start
+:Buka Halaman Redeem;
+
+|System|
+if (Poin\nCukup?) then (Ya)
+  :Tampilkan Pilihan Redeem;
+  
+  |User|
+  :Pilih Reward & Konfirmasi;
+  
+  |System|
+  :Proses Redeem;
+  
+  |Payment|
+  :Process Payment;
+  
+  if (Berhasil?) then (Ya)
+    |System|
+    :Update Status;
+    |User|
+    :Tampilkan Receipt;
+    stop
+  else (Gagal)
+    |User|
+    :Tampilkan Error;
+    stop
+  endif
+  
+else (Tidak)
+  |User|
+  :Tampilkan "Poin Tidak Cukup";
+  stop
+endif
+
+@enduml
+
+================================================================================
+
+9. DEPOSIT BOTTLES ACTIVITY DIAGRAM
+================================================================================
+
+@startuml DepositBottles
+title Deposit Bottles - Simplified
+
+|User|
+start
+:Scan QR Code;
+
+|System|
+if (QR\nValid?) then (Ya)
+  |User|
+  repeat
+    :Masukkan Botol;
+    |Arduino|
+    :Deteksi Botol;
+    |System|
+    :Hitung Botol;
+    :Hitung Point;
+    |User|
+    :Lihat Update;
+  repeat while (Lanjut?) is (Ya)
+  
+  :Claim Point;
+  
+  |System|
+  :Update Balance;
+  
+  |User|
+  :Tampilkan Receipt;
+else (Tidak)
+  |User|
+  :Error;
+endif
+
+stop
+@enduml
+
+================================================================================
+
+SUMMARY
+================================================================================
+
+File ini berisi 9 SIMPLIFIED activity diagrams dalam format PlantUML.
+Diagram sudah disederhanakan dengan fokus pada alur utama.
+
+DAFTAR DIAGRAMS:
+1. Login - Email/Password & Google OAuth
+2. Register - Registrasi user baru
+3. Manage Profile - Edit profil & change password
+4. View RVM Location - Peta lokasi RVM
+5. View Tutorial Video - Video panduan
+6. View Points - Lihat saldo poin
+7. View Transaction History - Riwayat transaksi
+8. Redeem Reward - Tukar poin (E-wallet/Voucher/Pulsa)
+9. Deposit Bottles - Scan QR & deposit botol real-time
+
+SWIMLANES:
+- User: Aktivitas pengguna
+- System: Backend processing
+- Arduino: IoT device detection
+- Third-party: External services (Google, Payment Gateway)
+
+CARA RENDER:
+- Online: https://www.plantuml.com/plantuml/uml/
+- VS Code: Install extension "PlantUML"
+- CLI: plantuml activity-diagram-plantuml.puml
+
+Diagram sudah disederhanakan untuk kemudahan pemahaman.
+Fokus pada happy path dan decision point utama.
+
+================================================================================

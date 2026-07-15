@@ -32,23 +32,23 @@ class MQTTService {
     this.client = mqtt.connect(`${protocol}://${options.host}:${options.port}`, options);
 
     this.client.on('connect', () => {
-      console.log('✅ MQTT Connected to HiveMQ!');
+      console.log('MQTT Connected to HiveMQ!');
       this.isConnected = true;
       this.subscribeToTopics();
     });
 
     this.client.on('error', (error) => {
-      console.error('❌ MQTT Error:', error.message);
+      console.error('MQTT Error:', error.message);
       this.isConnected = false;
     });
 
     this.client.on('close', () => {
-      console.log('🔌 MQTT Connection closed');
+      console.log('MQTT Connection closed');
       this.isConnected = false;
     });
 
     this.client.on('reconnect', () => {
-      console.log('🔄 MQTT Reconnecting...');
+      console.log('MQTT Reconnecting...');
     });
 
     this.client.on('message', (topic, message) => {

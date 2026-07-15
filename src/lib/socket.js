@@ -1,4 +1,3 @@
-// Broadcast bottle detection to all clients using global.io
 export function broadcastBottleDetection(data) {
   if (global.io) {
     global.io.to('bottle-detection').emit('bottle_detected', {
@@ -6,9 +5,9 @@ export function broadcastBottleDetection(data) {
       data: data,
       timestamp: new Date().toISOString(),
     });
-    console.log('📡 Broadcasting bottle detection via Socket.IO:', data);
+    console.log('Broadcasting bottle detection via Socket.IO:', data);
   } else {
-    console.warn('⚠️ Socket.IO not available for broadcasting');
+    console.warn('Socket.IO not available for broadcasting');
   }
 }
 

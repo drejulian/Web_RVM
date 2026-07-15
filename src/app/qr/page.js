@@ -7,7 +7,6 @@ import Image from 'next/image';
 
 const READER_ID = 'qr-reader';
 
-// ✅ Deteksi iOS
 const isIOS = () => {
   if (typeof window === 'undefined') return false;
   return (

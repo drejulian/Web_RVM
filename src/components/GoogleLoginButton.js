@@ -16,8 +16,8 @@ export default function GoogleLoginButton({ className = '' }) {
     setError('');
 
     try {
-      console.log('🔐 Google login success, credential received');
-      console.log('📦 Credential type:', typeof credentialResponse.credential);
+      console.log('Google login success, credential received');
+      console.log('Credential type:', typeof credentialResponse.credential);
 
       if (!credentialResponse.credential) {
         setError('Credential tidak ditemukan');

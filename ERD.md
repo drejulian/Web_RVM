@@ -13,6 +13,8 @@ erDiagram
     ArduinoConnection ||--o{ BottleTransaction : "executes"
     ArduinoConnection ||--o{ BottleCount : "records"
     BottleTransaction ||--o{ BottleCount : "aggregates"
+    User ||--o{ ArduinoSession : "creates"
+    ArduinoConnection ||--o{ ArduinoSession : "hosts"
 
     User {
         string id PK
@@ -22,6 +24,8 @@ erDiagram
         string phoneNumber
         string googleId UK
         boolean isGoogleAuth
+        string resetPasswordToken
+        datetime resetPasswordTokenExpiry
         datetime createdAt
         datetime updatedAt
     }
@@ -152,6 +156,16 @@ erDiagram
         string description
         datetime updatedAt
     }
+
+    ArduinoSession {
+        string id PK
+        string deviceId FK
+        string userId FK
+        datetime expiresAt
+        boolean isActive
+        datetime createdAt
+        datetime confirmedAt
+    }
 ```
 
 ## Entity Descriptions
@@ -168,6 +182,7 @@ erDiagram
 ### Device & Location
 - **ArduinoConnection**: Arduino device connection status and management
 - **RvmLocation**: Physical locations of RVM machines
+- **ArduinoSession**: Temporary sessions linking users to Arduino devices for direct bottle assignment via MQTT
 
 ### Voucher System
 - **Voucher**: Available vouchers that can be redeemed with points
@@ -234,6 +249,21 @@ erDiagram
     - locationId in BottleTransaction references RvmLocation
     - Direct relationship for efficient location-based queries and reporting
     - SetNull on delete (preserves transaction history even if location is removed)
+
+12. **User ↔ ArduinoSession** (1:N)
+    - One user can create multiple Arduino sessions
+    - Manages temporary sessions for direct bottle assignment via MQTT
+    - Session expires after defined period for security
+    - Cascade delete enabled (sessions deleted when user is deleted)
+    - Enables MQTT-based direct assignment: Arduino → MQTT → Server checks session → Direct user credit
+
+13. **ArduinoConnection ↔ ArduinoSession** (1:N)
+    - One Arduino device can host multiple user sessions
+    - deviceId in ArduinoSession references unique deviceId in ArduinoConnection
+    - Allows tracking which device is currently assigned to which user
+    - Only one active session per device at a time (enforced by application logic)
+    - Cascade delete enabled (sessions deleted when device is removed)
+    - Index on [deviceId, isActive] for efficient active session queries
 
 ## Enumerations
 

@@ -36,7 +36,8 @@ graph TB
         
         subgraph "Custom Server"
             ExpressHTTP[HTTP Server<br/>Express + Next]
-            SocketServer[Socket.IO Server<br/>Real-time Events]
+            SocketIOSrv[Socket.IO Server<br/>Web Client Updates]
+            MQTTClientSrv[MQTT Client<br/>mqtt.js v5.15.1]
         end
         
         subgraph "Middleware"
@@ -70,6 +71,7 @@ graph TB
     end
     
     subgraph "External Services"
+        HiveMQCloud[HiveMQ Cloud<br/>MQTT Broker<br/>Port 8883 TLS]
         GoogleOAuth[Google OAuth 2.0<br/>Authentication]
         Firebase[Firebase Admin<br/>Cloud Messaging]
         PaymentGW[Payment Gateways<br/>BCA/GoPay/OVO/Dana]
@@ -96,7 +98,7 @@ graph TB
     ReactApp --> PWA
     
     ReactApp --> APIRoutes
-    ReactApp --> SocketServer
+    ReactApp --> SocketIOSrv
     
     NextRouter --> NextServer
     APIRoutes --> ExpressHTTP
@@ -132,29 +134,34 @@ graph TB
     LocationService -.-> Firebase
     BottleService -.-> PaymentGW
     
-    Arduino1 --> SocketServer
-    Arduino2 --> SocketServer
-    ArduinoN --> SocketServer
+    Arduino1 -->|MQTT Publish| HiveMQCloud
+    Arduino2 -->|MQTT Publish| HiveMQCloud
+    ArduinoN -->|MQTT Publish| HiveMQCloud
     Sensors --> Arduino1
     Sensors --> Arduino2
     Sensors --> ArduinoN
     
-    SocketServer --> BottleService
-    SocketServer --> LocationService
+    HiveMQCloud -->|MQTT Subscribe| MQTTClientSrv
+    MQTTClientSrv --> BottleService
+    MQTTClientSrv --> LocationService
+    BottleService --> SocketIOSrv
+    SocketIOSrv -.->|Real-time Events| ReactApp
     
     style Browser fill:#3b82f6,color:#fff
     style PostgreSQL fill:#336791,color:#fff
     style Arduino1 fill:#00979d,color:#fff
     style Arduino2 fill:#00979d,color:#fff
     style ArduinoN fill:#00979d,color:#fff
+    style HiveMQCloud fill:#ff6b6b,color:#fff
+    style MQTTClientSrv fill:#8b5cf6,color:#fff
+    style SocketIOSrv fill:#06b6d4,color:#fff
     style GoogleOAuth fill:#4285f4,color:#fff
     style Firebase fill:#ffca28,color:#000
-    style SocketServer fill:#10b981,color:#fff
 ```
 
 ---
 
-## 2. System Architecture Overview - Simplified
+## 2. System Architecture Overview - Simplified (Hybrid MQTT + Socket.IO)
 
 Versi sederhana dari arsitektur sistem yang mudah dipahami dan dijelaskan.
 
@@ -166,11 +173,12 @@ graph TB
     
     subgraph "Layer 2: Application Server"
         WebServer[Next.js Server<br/>Frontend + API Routes]
-        RealtimeServer[Socket.IO Server<br/>Real-time Events]
+        SocketIO[Socket.IO Server<br/>Web Client Updates]
+        MQTTClient[MQTT Client<br/>Subscribe from Arduino]
     end
     
     subgraph "Layer 3: Business Logic"
-        Services[Services Layer<br/>Auth, Bottle, User, Location, News]
+        Services[Services Layer<br/>MQTT, Bottle, Auth, User, Location, News]
     end
     
     subgraph "Layer 4: Database"
@@ -179,25 +187,32 @@ graph TB
     end
     
     subgraph "Layer 5: External Systems"
-        IoT[Arduino Devices<br/>Bottle Detection]
+        MQTTBroker[HiveMQ Cloud<br/>MQTT Broker]
+        IoT[Arduino Devices<br/>ESP32 + Sensors]
         APIs[External APIs<br/>Google OAuth, Payment, Firebase]
     end
     
     Client -->|HTTP/HTTPS| WebServer
-    Client -->|WebSocket| RealtimeServer
+    Client <-->|Socket.IO| SocketIO
     
     WebServer --> Services
-    RealtimeServer --> Services
+    SocketIO -.->|Broadcast Events| Client
+    
+    IoT -->|MQTT Publish| MQTTBroker
+    MQTTBroker -->|MQTT Subscribe| MQTTClient
+    MQTTClient -->|Process Data| Services
+    Services -->|Broadcast via Socket.IO| SocketIO
     
     Services --> ORM
     ORM --> DB
     
-    IoT -->|WebSocket| RealtimeServer
     Services -.->|API Calls| APIs
     
     style Client fill:#3b82f6,color:#fff
     style WebServer fill:#10b981,color:#fff
-    style RealtimeServer fill:#06b6d4,color:#fff
+    style SocketIO fill:#06b6d4,color:#fff
+    style MQTTClient fill:#8b5cf6,color:#fff
+    style MQTTBroker fill:#ff6b6b,color:#fff
     style Services fill:#8b5cf6,color:#fff
     style DB fill:#336791,color:#fff
     style ORM fill:#6366f1,color:#fff
@@ -208,15 +223,27 @@ graph TB
 **Penjelasan Singkat:**
 
 - **Layer 1 (Client)**: Aplikasi web yang diakses user melalui browser atau diinstall sebagai PWA
-- **Layer 2 (Application Server)**: Next.js menangani web pages dan API, Socket.IO untuk real-time communication
-- **Layer 3 (Business Logic)**: Services yang menangani logika bisnis (autentikasi, bottle management, dll)
+- **Layer 2 (Application Server)**: 
+  - Next.js menangani web pages dan API
+  - Socket.IO untuk real-time updates ke web clients
+  - MQTT Client untuk menerima data dari Arduino via cloud broker
+- **Layer 3 (Business Logic)**: Services yang menangani logika bisnis (autentikasi, bottle management, MQTT processing)
 - **Layer 4 (Database)**: PostgreSQL untuk data storage, diakses melalui Prisma ORM
-- **Layer 5 (External Systems)**: Arduino devices untuk deteksi botol, dan external APIs untuk OAuth/Payment
+- **Layer 5 (External Systems)**: 
+  - HiveMQ Cloud sebagai MQTT Broker (cloud-based)
+  - Arduino ESP32 devices untuk deteksi botol
+  - External APIs untuk OAuth/Payment
 
 **Alur Data Utama:**
-1. User → Web Server (request/response HTTP)
-2. Arduino → Socket.IO → Services → Database (bottle detection real-time)
-3. Services → External APIs (authentication, payment processing)
+1. User ↔ Web Server (request/response HTTP)
+2. Arduino → MQTT Broker (HiveMQ) → Server MQTT Client → Services → Database
+3. Services → Socket.IO → Web Clients (real-time bottle detection updates)
+4. Services → External APIs (authentication, payment processing)
+
+**Arsitektur Hybrid:**
+- **MQTT Protocol**: Untuk komunikasi Arduino → Server (reliable, lightweight untuk IoT)
+- **Socket.IO/WebSocket**: Untuk komunikasi Server → Web Clients (real-time browser updates)
+- **Server sebagai Bridge**: Menerima MQTT messages, memproses, lalu broadcast via Socket.IO
 
 ---
 
@@ -235,11 +262,12 @@ graph LR
     
     subgraph "Backend Stack"
         BE1[Node.js<br/>Express 5.1.0]
-        BE2[Socket.IO 4.8.1<br/>Real-time]
-        BE3[Prisma 6.12.0<br/>ORM]
-        BE4[jsonwebtoken 9.0.2<br/>JWT Auth]
-        BE5[bcryptjs 3.0.2<br/>Password Hash]
-        BE6[@react-oauth/google<br/>OAuth 0.13.5]
+        BE2[Socket.IO 4.8.1<br/>Web Client Real-time]
+        BE3[MQTT 5.15.1<br/>IoT Communication]
+        BE4[Prisma 6.12.0<br/>ORM]
+        BE5[jsonwebtoken 9.0.2<br/>JWT Auth]
+        BE6[bcryptjs 3.0.2<br/>Password Hash]
+        BE7[@react-oauth/google<br/>OAuth 0.13.5]
     end
     
     subgraph "Database"
@@ -260,17 +288,21 @@ graph LR
     
     FE1 --> BE1
     FE1 --> BE2
-    BE1 --> BE3
-    BE3 --> DB1
     BE1 --> BE4
+    BE4 --> DB1
     BE1 --> BE5
-    FE1 --> BE6
-    BE6 -.-> EXT1
+    BE1 --> BE6
+    FE1 --> BE7
+    BE7 -.-> EXT1
     BE1 -.-> EXT2
     BE1 -.-> EXT3
     BE1 -.-> EXT4
-    IOT1 --> BE2
+    IOT1 --> BE3
+    BE3 --> BE1
     IOT2 --> IOT1
+    
+    style BE2 fill:#06b6d4,color:#fff
+    style BE3 fill:#8b5cf6,color:#fff
 ```
 
 ---
@@ -386,47 +418,67 @@ graph TB
 
 ---
 
-## 5. Real-time Communication Flow (Socket.IO)
+## 5. Real-time Communication Flow (Hybrid MQTT + Socket.IO)
 
 ```mermaid
 sequenceDiagram
-    participant Arduino as Arduino Device
-    participant SocketIO as Socket.IO Server
+    participant Arduino as Arduino Device<br/>(ESP32)
+    participant HiveMQ as HiveMQ Cloud<br/>(MQTT Broker)
+    participant MQTTService as MQTT Service<br/>(Server)
     participant BottleService as Bottle Service
     participant Database as PostgreSQL
+    participant SocketIO as Socket.IO Server
     participant WebClient as Web Client
+    
+    Note over Arduino,WebClient: System Initialization
+    
+    MQTTService->>HiveMQ: Connect as MQTT Client
+    HiveMQ-->>MQTTService: Connected
+    MQTTService->>HiveMQ: Subscribe to rvm/device/+/bottles
+    MQTTService->>HiveMQ: Subscribe to rvm/device/+/status
+    MQTTService->>HiveMQ: Subscribe to rvm/device/+/session/request
+    
+    WebClient->>SocketIO: Connect via WebSocket
+    SocketIO-->>WebClient: Connected Event
+    WebClient->>SocketIO: Join Room "bottle-detection"
     
     Note over Arduino,WebClient: Arduino Bottle Detection Flow
     
-    Arduino->>SocketIO: Connect (deviceId: RVM-001)
-    SocketIO->>Arduino: Connected Event
+    Arduino->>Arduino: Ultrasonic Sensor<br/>Detects Bottle
+    Arduino->>HiveMQ: MQTT Publish<br/>Topic: rvm/device/RVM-001/bottles<br/>{deviceId, bottleCount, rvmLocationId, distance}
+    HiveMQ->>MQTTService: Forward MQTT Message
     
-    WebClient->>SocketIO: Connect
-    SocketIO->>WebClient: Connected Event
-    WebClient->>SocketIO: Join Room "bottle-detection"
+    MQTTService->>MQTTService: Parse JSON Payload<br/>handleBottleDetection()
+    MQTTService->>Database: Validate Device<br/>SELECT FROM arduino_connections
+    Database-->>MQTTService: Device Valid
+    MQTTService->>Database: Validate Location<br/>SELECT FROM rvm_locations
+    Database-->>MQTTService: Location Valid
     
-    Note over Arduino: Sensor detects bottle
+    MQTTService->>Database: INSERT INTO bottle_counts<br/>(deviceId, count, distance, source: 'arduino_mqtt')
+    Database-->>MQTTService: Record Created (ID)
     
-    Arduino->>SocketIO: POST /api/bottle-count<br/>{deviceId, count, distance}
-    SocketIO->>BottleService: Process Bottle Count
-    BottleService->>Database: INSERT INTO bottle_counts
-    Database-->>BottleService: Success
+    MQTTService->>SocketIO: broadcastBottleDetection()<br/>{deviceId, bottleCount, totalUnclaimed, locationName}
+    SocketIO->>WebClient: Emit "bottle_detected"<br/>to "bottle-detection" room
     
-    BottleService->>SocketIO: Broadcast Event
-    SocketIO->>WebClient: Event "bottle_detected"<br/>{deviceId, count, timestamp}
+    MQTTService->>HiveMQ: MQTT Publish<br/>Topic: rvm/server/RVM-001/confirmation<br/>{success, recordId, timestamp}
+    HiveMQ->>Arduino: Forward Confirmation
     
-    WebClient->>WebClient: Update UI<br/>Show bottle count
+    WebClient->>WebClient: Update UI<br/>Show Bottle Count
+    Arduino->>Arduino: LED Blinks<br/>Confirmation Received
     
-    Note over Arduino,WebClient: User Claims Bottles
+    Note over Arduino,WebClient: User Claims Bottles (via Web App)
     
-    WebClient->>SocketIO: POST /api/bottle-count/claim<br/>{userId, deviceId}
-    SocketIO->>BottleService: Claim Bottles
-    BottleService->>Database: UPDATE user_bottle_counts
+    WebClient->>BottleService: HTTP POST /api/bottle-count/claim<br/>{userId, deviceId}
+    BottleService->>Database: BEGIN TRANSACTION
+    BottleService->>Database: SELECT unclaimed bottles WHERE deviceId
+    BottleService->>Database: UPDATE user_bottle_counts<br/>(increment bottles & points)
+    BottleService->>Database: UPDATE bottle_counts SET userBottleCountId
     BottleService->>Database: INSERT INTO bottle_transactions
-    Database-->>BottleService: Success
+    BottleService->>Database: COMMIT TRANSACTION
+    Database-->>BottleService: Transaction Success
     
-    BottleService->>SocketIO: Broadcast Update
-    SocketIO->>WebClient: Event "bottles_claimed"<br/>{userId, totalBottles, points}
+    BottleService->>SocketIO: Emit "bottles_claimed"
+    SocketIO->>WebClient: Event {userId, totalBottles, points}
     
     WebClient->>WebClient: Update Balance<br/>Show Receipt
 ```
@@ -520,7 +572,9 @@ sequenceDiagram
     participant QRScanner as QR Scanner
     participant LocationAPI as Location API
     participant BottleAPI as Bottle API
-    participant Arduino as Arduino Device
+    participant Arduino as Arduino Device<br/>(ESP32)
+    participant HiveMQ as HiveMQ Cloud<br/>(MQTT Broker)
+    participant MQTTService as MQTT Service
     participant SocketIO as Socket.IO
     participant Database as PostgreSQL
     
@@ -557,26 +611,31 @@ sequenceDiagram
     
     User->>Arduino: Insert Bottle #1
     Arduino->>Arduino: Ultrasonic Sensor Detects<br/>Distance < 10cm
-    Arduino->>BottleAPI: POST /api/bottle-count<br/>{deviceId: "RVM-001", count: 1, distance: 5.2}
-    BottleAPI->>Database: INSERT INTO bottle_counts<br/>(deviceId, count, distance, source)
-    Database-->>BottleAPI: Bottle Count Saved
-    BottleAPI->>SocketIO: Emit "bottle_detected"
-    SocketIO->>WebApp: Event {deviceId, count: 1, total: 1}
+    Arduino->>HiveMQ: MQTT Publish<br/>rvm/device/RVM-001/bottles<br/>{deviceId, bottleCount: 1, rvmLocationId, distance: 5.2}
+    HiveMQ->>MQTTService: Forward Message
+    MQTTService->>Database: INSERT INTO bottle_counts<br/>(deviceId, count, distance, source: 'arduino_mqtt')
+    Database-->>MQTTService: Bottle Count Saved
+    MQTTService->>SocketIO: broadcastBottleDetection()
+    SocketIO->>WebApp: Event "bottle_detected" {deviceId, count: 1, total: 1}
     WebApp->>WebApp: Update UI: "1 Bottle Detected"
+    MQTTService->>HiveMQ: Publish Confirmation<br/>rvm/server/RVM-001/confirmation
+    HiveMQ->>Arduino: Confirmation Received
     
     User->>Arduino: Insert Bottle #2
     Arduino->>Arduino: Sensor Detects
-    Arduino->>BottleAPI: POST /api/bottle-count<br/>{deviceId: "RVM-001", count: 1, distance: 6.1}
-    BottleAPI->>Database: INSERT INTO bottle_counts
-    Database-->>BottleAPI: Saved
-    BottleAPI->>SocketIO: Emit "bottle_detected"
+    Arduino->>HiveMQ: MQTT Publish<br/>rvm/device/RVM-001/bottles<br/>{deviceId, bottleCount: 1, distance: 6.1}
+    HiveMQ->>MQTTService: Forward Message
+    MQTTService->>Database: INSERT INTO bottle_counts
+    Database-->>MQTTService: Saved
+    MQTTService->>SocketIO: broadcastBottleDetection()
     SocketIO->>WebApp: Event {deviceId, count: 1, total: 2}
     WebApp->>WebApp: Update UI: "2 Bottles Detected"
     
     User->>Arduino: Insert Bottle #N
-    Arduino->>BottleAPI: POST /api/bottle-count
-    BottleAPI->>Database: INSERT INTO bottle_counts
-    BottleAPI->>SocketIO: Emit "bottle_detected"
+    Arduino->>HiveMQ: MQTT Publish
+    HiveMQ->>MQTTService: Forward Message
+    MQTTService->>Database: INSERT INTO bottle_counts
+    MQTTService->>SocketIO: broadcastBottleDetection()
     SocketIO->>WebApp: Event {total: N}
     WebApp->>WebApp: Update UI: "N Bottles Detected"
     
@@ -774,7 +833,7 @@ graph TB
 
 ---
 
-## 10. Deployment Architecture
+## 10. Deployment Architecture (Hybrid MQTT + Socket.IO)
 
 ```mermaid
 graph TB
@@ -787,7 +846,8 @@ graph TB
     subgraph "Production Server"
         NodeServer[Node.js Server<br/>Port 3000]
         NextApp[Next.js 15 App]
-        SocketIOSrv[Socket.IO Server]
+        SocketIOSrv[Socket.IO Server<br/>Port 3000]
+        MQTTClient[MQTT Client<br/>mqtt.js]
         PrismaORM[Prisma Client]
     end
     
@@ -795,7 +855,8 @@ graph TB
         PG[(PostgreSQL<br/>Database)]
     end
     
-    subgraph "External Services"
+    subgraph "Cloud Services"
+        HiveMQCloud[HiveMQ Cloud<br/>MQTT Broker<br/>Port 8883 TLS]
         GoogleAPI[Google OAuth API]
         FirebaseAPI[Firebase Admin API]
         PaymentAPI[Payment Gateway APIs]
@@ -808,30 +869,58 @@ graph TB
         RVMN[RVM Device #N<br/>Arduino ESP32]
     end
     
-    Mobile --> NodeServer
-    Desktop --> NodeServer
-    PWA --> NodeServer
+    Mobile -->|HTTPS/WSS| NodeServer
+    Desktop -->|HTTPS/WSS| NodeServer
+    PWA -->|HTTPS/WSS| NodeServer
     
     NodeServer --> NextApp
     NodeServer --> SocketIOSrv
+    NodeServer --> MQTTClient
     NextApp --> PrismaORM
     PrismaORM --> PG
+    
+    SocketIOSrv -.->|WebSocket| Mobile
+    SocketIOSrv -.->|WebSocket| Desktop
+    SocketIOSrv -.->|WebSocket| PWA
+    
+    MQTTClient -->|MQTTS<br/>Subscribe| HiveMQCloud
+    
+    RVM1 -->|MQTTS Publish<br/>Port 8883| HiveMQCloud
+    RVM2 -->|MQTTS Publish<br/>Port 8883| HiveMQCloud
+    RVMN -->|MQTTS Publish<br/>Port 8883| HiveMQCloud
     
     NextApp -.-> GoogleAPI
     NextApp -.-> FirebaseAPI
     NextApp -.-> PaymentAPI
     NextApp -.-> EmailSMTP
     
-    RVM1 --> SocketIOSrv
-    RVM2 --> SocketIOSrv
-    RVMN --> SocketIOSrv
-    
     style NodeServer fill:#10b981,color:#fff
+    style SocketIOSrv fill:#06b6d4,color:#fff
+    style MQTTClient fill:#8b5cf6,color:#fff
+    style HiveMQCloud fill:#ff6b6b,color:#fff
     style PG fill:#336791,color:#fff
     style RVM1 fill:#00979d,color:#fff
     style RVM2 fill:#00979d,color:#fff
     style RVMN fill:#00979d,color:#fff
 ```
+
+**Penjelasan Deployment:**
+
+- **Client Layer**: Browser dan PWA connect via HTTPS/WebSocket Secure (WSS)
+- **Application Server**: 
+  - Next.js untuk HTTP/API requests
+  - Socket.IO Server untuk real-time updates ke clients
+  - MQTT Client (mqtt.js) untuk subscribe dari HiveMQ Cloud
+  - Prisma ORM untuk database access
+- **Cloud MQTT Broker**: HiveMQ Cloud (external managed service)
+  - Port 8883 dengan TLS encryption
+  - Handles MQTT pub/sub untuk semua Arduino devices
+  - Reliable message delivery dengan QoS 1
+- **IoT Network**: Arduino ESP32 devices publish sensor data via MQTTS
+- **Security**: 
+  - MQTTS (MQTT over TLS) untuk Arduino → HiveMQ
+  - WSS (WebSocket Secure) untuk Browser ↔ Server
+  - HTTPS untuk API calls
 
 ---
 
@@ -875,13 +964,24 @@ Sistem RVM menggunakan arsitektur berlapis dengan pemisahan yang jelas:
 ### Pola Komunikasi
 
 **Synchronous (HTTP/REST):**
-- Client ? API Routes untuk operasi CRUD standar
+- Client → API Routes untuk operasi CRUD standar
 - Autentikasi menggunakan JWT tokens di cookies
 - RESTful endpoints dengan standard HTTP methods
 
-**Asynchronous (WebSocket):**
-- Arduino ? Socket.IO untuk bottle detection real-time
-- Client ? Socket.IO untuk live updates di UI
+**Asynchronous - Hybrid Protocol:**
+- **Arduino → Server**: MQTT Protocol via HiveMQ Cloud
+  - Arduino publishes to topics: `rvm/device/{deviceId}/bottles`, `/status`, `/session/request`
+  - Lightweight, reliable, built for IoT devices
+  - QoS 1 untuk guaranteed delivery
+  - MQTTS (MQTT over TLS) untuk security
+- **Server → Web Clients**: Socket.IO (WebSocket)
+  - Real-time updates untuk bottle detection
+  - Room-based broadcasting (`bottle-detection` room)
+  - Automatic reconnection handling
+- **Server sebagai Bridge**: 
+  - MQTT Service subscribes dari HiveMQ Cloud
+  - Processes dan saves data ke database
+  - Broadcasts events ke web clients via Socket.IO
 - Event-driven architecture untuk responsiveness
 
 ### Keputusan Teknis Utama
@@ -896,10 +996,23 @@ Sistem RVM menggunakan arsitektur berlapis dengan pemisahan yang jelas:
 - Migration management yang robust
 - Auto-generated client untuk TypeScript
 
-**3. Socket.IO untuk Real-time**
-- Bi-directional communication dengan Arduino
-- Room-based broadcasting untuk efficiency
-- Automatic reconnection handling
+**3. Hybrid MQTT + Socket.IO untuk Real-time**
+- **MQTT Protocol** untuk Arduino → Server communication
+  - External HiveMQ Cloud broker (managed, scalable)
+  - MQTTS (TLS encryption) untuk security
+  - QoS 1 untuk guaranteed message delivery
+  - Topic-based pub/sub pattern: `rvm/device/+/bottles`
+  - Lightweight protocol ideal untuk IoT devices dengan bandwidth terbatas
+- **Socket.IO** untuk Server → Web Clients communication
+  - Bi-directional communication dengan web browsers
+  - Room-based broadcasting untuk efficiency
+  - Automatic reconnection handling
+  - Browser-compatible (no MQTT support in browsers)
+- **Server sebagai Bridge** antara MQTT dan Socket.IO
+  - MQTT Service subscribes dari cloud broker
+  - Processes data dan saves ke database via Prisma
+  - Broadcasts ke web clients via Socket.IO
+  - Decouples IoT layer dari client layer
 
 **4. PostgreSQL Database**
 - ACID compliance untuk transaction integrity
@@ -949,7 +1062,8 @@ API processes ? Database updates ? Client UI updates ? Receipt generated
 | | Leaflet | 1.9.4 | Maps & geolocation |
 | **Backend** | Node.js | Latest | Runtime environment |
 | | Express | 5.1.0 | HTTP server |
-| | Socket.IO | 4.8.1 | WebSocket server |
+| | Socket.IO | 4.8.1 | WebSocket server (web clients) |
+| | MQTT.js | 5.15.1 | MQTT client (Arduino comm) |
 | | Prisma | 6.12.0 | Database ORM |
 | **Auth** | jsonwebtoken | 9.0.2 | JWT authentication |
 | | bcryptjs | 3.0.2 | Password hashing |

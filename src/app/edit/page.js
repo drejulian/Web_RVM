@@ -195,7 +195,7 @@ export default function EditProfilePage() {
               value={formData.email}
               type="email"
               disabled
-              className="bg-gray-100 text-gray-500"
+              className="bg-gray-100 !text-gray-500"
               placeholder="Email tidak dapat diubah"
             />
 
@@ -203,7 +203,7 @@ export default function EditProfilePage() {
               label="ID User"
               value={formData.id}
               disabled
-              className="bg-gray-100 text-gray-500"
+              className="bg-gray-100 !text-gray-500"
               placeholder="ID user tidak dapat diubah"
             />
 
@@ -256,7 +256,14 @@ function Field({
   return (
     <div>
       <label className="text-text-primary text-sm font-medium block mb-1">
-        {label}
+        {label.split('*').map((part, index, parts) => (
+          <span key={index}>
+            {part}
+            {index < parts.length - 1 && (
+              <span className="text-red-500">*</span>
+            )}
+          </span>
+        ))}
       </label>
       <input
         type={type}
@@ -265,7 +272,7 @@ function Field({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        className={`w-full p-3 border-[3px] border-secondary rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${className}`}
+        className={`w-full p-3 border-[3px] border-secondary rounded-[10px] text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${className}`}
       />
     </div>
   );

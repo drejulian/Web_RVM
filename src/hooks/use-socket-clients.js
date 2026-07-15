@@ -50,14 +50,14 @@ export function useSocket(url, options = {}) {
 
     // Listen for bottle detection updates
     socket.on('bottle_detected', (message) => {
-      console.log('📡 Received bottle detection:', message);
+      console.log('Received bottle detection:', message);
       setLastMessage(message);
       onMessage?.(message);
     });
 
     // Listen for welcome message
     socket.on('connected', (message) => {
-      console.log('📡 Connected message:', message);
+      console.log('Connected message:', message);
     });
 
     // Cleanup on unmount

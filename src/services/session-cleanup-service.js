@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 class SessionCleanupService {
   async finalizeExpiredSessions() {
     try {
-      console.log('🧹 Starting expired session cleanup...');
+      console.log('Starting expired session cleanup...');
       
       const expiredSessions = await prisma.arduinoSession.findMany({
         where: {

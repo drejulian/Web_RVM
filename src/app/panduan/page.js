@@ -97,7 +97,7 @@ export default function Page() {
         <div className="grid grid-cols-2 gap-x-11 gap-y-8">
           <div className="">
             <Image
-              src="/svg/p-1.svg"
+              src="/svg/P-1.svg"
               alt="panduan-1"
               width={138.44}
               height={122.73}
@@ -110,7 +110,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-2.svg"
+              src="/svg/P-2.svg"
               alt="panduan-2"
               width={138.44}
               height={122.73}
@@ -123,7 +123,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-3.svg"
+              src="/svg/P-3.svg"
               alt="panduan-3"
               width={138.44}
               height={122.73}
@@ -136,7 +136,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-4.svg"
+              src="/svg/P-4.svg"
               alt="panduan-4"
               width={138.44}
               height={122.73}
@@ -149,7 +149,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-5.svg"
+              src="/svg/P-5.svg"
               alt="panduan-5"
               width={138.44}
               height={122.73}
@@ -162,7 +162,7 @@ export default function Page() {
           </div>
           <div className="">
             <Image
-              src="/svg/p-6.svg"
+              src="/svg/P-6.svg"
               alt="panduan-1"
               width={138.44}
               height={122.73}
@@ -176,7 +176,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-7.svg"
+              src="/svg/P-7.svg"
               alt="panduan-7"
               width={138.44}
               height={122.73}
@@ -189,7 +189,7 @@ export default function Page() {
           </div>
           <div>
             <Image
-              src="/svg/p-8.svg"
+              src="/svg/P-8.svg"
               alt="panduan-8"
               width={138.44}
               height={122.73}
